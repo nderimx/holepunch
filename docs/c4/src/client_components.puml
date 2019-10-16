@@ -1,0 +1,43 @@
+@startuml C4_Components
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/release/1-0/C4_Component.puml
+
+title Component diagram of
+
+Container_Boundary(ClientA, "ClientA") {
+ComponentDb(DBA, "DB-A", "Stores UUIDs of  User's Contacts")
+Component(CLI, "Command Line Interface", "Contains all Necessary Commands needed to Use the Clients Functionalities")
+Component(RegistrationComponent, "Registration Component", "Handles the Registration of the Client")
+Component(ConnectionComponent, "Connection Initiator Component", "Is Responsible for Creating the P2P Initiation Requests and Handling Peer Endpoints")
+Component(P2PCommunicationsController, "P2P Communications Controller", "Handles all P2P Communications")
+Component(CSCommunicationsController, "C-S Communications Controller", "Handles all Client-Server Communications")
+}
+Person(Alice, "User", "Has their own Private Key & UUID")
+Container(ClientB, "ClientB", "User's Communications Software")
+Container(Server, "Rendezvous Server", "Relays Requests & Endpoint Information")
+
+Rel_(RegistrationComponent, DBA, "reads from", "-UP->")
+Rel(ConnectionComponent, DBA, "reads from")
+Rel(Alice, CLI, "interfaces client using")
+Rel(CLI, ConnectionComponent, "(3)calls functions from")
+Rel(CLI, P2PCommunicationsController, "calls functions from")
+Rel_(CSCommunicationsController, RegistrationComponent, "(1)sends registration reqeust", "<--")
+Rel(ConnectionComponent, CSCommunicationsController, "(4)requests p2p connection")
+Rel(CSCommunicationsController, ConnectionComponent, "(7)relays peer's endpoints")
+Rel_(ConnectionComponent, P2PCommunicationsController, "(8)sends peer's contact information", "-RIGHT->")
+Rel_(P2PCommunicationsController, ClientB, "both perform hole punching", "<-->")
+Rel(CSCommunicationsController, Server, "(2)relays reg. req.  (5)relays p2p conn. req.")
+Rel_(Server, CSCommunicationsController, "(6)delivers peer's endpoints", "-LEFT->")
+Rel_(Server, ClientB, "(6)delivers peer's endpoints", "-UP->")
+
+
+
+hide stereotype
+legend left
+|=              |= Type |
+|<PERSON_BG_COLOR>      | person |
+|<CONTAINER_BG_COLOR>   | container |
+|<COMPONENT_BG_COLOR>   | component |
+endlegend
+
+@enduml

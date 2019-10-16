@@ -1,0 +1,33 @@
+@startuml C4_Components
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/release/1-0/C4_Component.puml
+
+title Component diagram of Rendezvous Server
+
+Container_Boundary(Server, "Rendezvous Server") {
+ComponentDb(DBS, "DB-S", "Stores all Client's Endpoints and UUIDs")
+Component(Registrator, "Registration Controller", "Verifies and Registers Clients")
+Component(Communicator, "Communications Controller", "Keeps track of all active sessions and communicates with clients")
+Component(Connector, "Peer Connector Component", "Fetches an formats required data for establishing a p2p connection")
+}
+Container(ClientA, "ClientA", "User's Communications Software")
+Container(ClientB, "ClientB", "User's Communications Software")
+
+Rel(Registrator, DBS, "writes to")
+Rel_(Connector, DBS, "reads from", "->")
+Rel(ClientB, Communicator, "(1)sends registration data")
+Rel(ClientA, Communicator, "(2)sends registration data")
+Rel(ClientA, Communicator, "(3)requests p2p connection")
+Rel(Communicator, ClientA, "(4)sends requested user's endpoints")
+Rel(Communicator, ClientB, "(4)sends endpoints and UUID of requesting user")
+Rel_(Communicator, Registrator, "relays data", "->")
+Rel_(Connector ,Communicator, "relays data", "<-->")
+
+hide stereotype
+legend left
+|=              |= Type |
+|<CONTAINER_BG_COLOR>   | container |
+|<COMPONENT_BG_COLOR>   | component |
+endlegend
+
+@enduml

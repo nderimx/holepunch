@@ -1,0 +1,34 @@
+@startuml C4_Container
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/release/1-0/C4_Container.puml
+
+title Container diagram for UDP Hole Punching
+
+Person(Alice, "User", "Wants to Communicate P2P and has their own Private Key & UUID")
+Person(Bob, "Another User", "PrivKey & UUID")
+
+System_Boundary(P2PProtocol, "UDP Hole Punching Protocol") {
+
+Container(Server, "Rendezvous Server", "Relays Requests & Endpoint Information")
+Container(ClientA, "ClientA", "User's Communications Software")
+Container(ClientB, "ClientB", "User's Communications Software")
+}
+
+Rel(ClientB, Server, "(1)registers to")
+Rel(ClientA, Server, "(2)registers & requests p2p conn")
+Rel(Server, ClientB, "(3)sends endpoints and UUID of requesting user")
+Rel(Server, ClientA, "(3)sends requested user's endpoints")
+Rel_(ClientA, ClientB, "(4)p2p communication", "-")
+Rel(Alice, ClientA, "communicates w/ peers using")
+Rel(Bob, ClientB, "communicates w/ peers using")
+
+hide stereotype
+legend left
+|=                   |= Type          |
+|<PERSON_BG_COLOR>   | Person         |
+|<CONTAINER_BG_COLOR>| Container      |
+|        -------------------------------->--     | UDP Connection |
+|        ----------------------------------------| UDP Connection |
+endlegend
+
+@enduml
