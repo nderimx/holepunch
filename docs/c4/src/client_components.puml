@@ -2,7 +2,7 @@
 
 !includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/release/1-0/C4_Component.puml
 
-title Component diagram of
+title Component diagram of the Client
 
 Container_Boundary(ClientA, "ClientA") {
 ComponentDb(DBA, "DB-A", "Stores UUIDs of  User's Contacts")
