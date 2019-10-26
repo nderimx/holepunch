@@ -1,0 +1,5 @@
+logs container_name
+run --publish hostport:containerport/udp --detach --net network_name --name container_name image_name
+build -t image_name /path/to/dockerfile
+rm --force container_name
+network create network_name
