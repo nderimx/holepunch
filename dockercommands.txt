@@ -1,0 +1,8 @@
+logs container_name
+run --publish hostport:containerport/udp --detach --net network_name --name container_name image_name
+build -t image_name /path/to/dockerfile
+rm --force container_name
+network create network_name
+exec -it ts bash
+
+service create --replicas=number_replicas --p hport:cport container_name *<MAKES REPLICAS OF A RUNNING CONTAINER AND ESTABLISHES A LOAD BALANCER (THIS IS USEFUL WHEN THE CONTAINERS ARE IN MULTIPLE HOSTS)>*

@@ -31,6 +31,7 @@ func serveCommunicate() {
 	if err != nil {
 		fmt.Printf("Could not Read from UDP: %s\n", err)
 	}
+	fmt.Printf("\nrec: %s\tfrom: %s\n", buf, rAddr)
 	conn.Close()
 	conn, err = net.DialUDP("udp", &lAddr, rAddr)
 	if err != nil {
@@ -42,8 +43,8 @@ func serveCommunicate() {
 }
 
 func listen(conn *net.UDPConn) {
-	var buf [1024]byte
 	for {
+		var buf [1024]byte
 		_, remoteAddr, err := conn.ReadFromUDP(buf[:])
 		if err != nil {
 			fmt.Printf("Could not Read from UDP: %s\n", err)

@@ -10,8 +10,8 @@ import (
 )
 
 func listen(conn *net.UDPConn) {
-	var buf [1024]byte
 	for {
+		var buf [1024]byte
 		_, _, err := conn.ReadFromUDP(buf[:])
 		if err != nil {
 			fmt.Printf("Could not Read from UDP: %s\n", err)
