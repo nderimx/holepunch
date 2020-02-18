@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
-	"errors"
 )
 
 var (
@@ -18,85 +16,73 @@ type client struct {
 	Endpoint string
 }
 
-func serveCommunicate() {
-	lAddr := net.UDPAddr{
+func main() {
+
+	udpAddr := net.UDPAddr{
 		Port: 9090,
 		IP:   nil,
 	}
-	
-}
 
-func spawnNewConnection() {
-	conn, err = net.DialUDP("udp", &lAddr, rAddr)
+	conn, err := net.ListenUDP("udp", &udpAddr)
 	if err != nil {
-		fmt.Printf("Could not Connect to remote Address: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Could not listen for UDP datagrams: %s", err.Error())
+		os.Exit(1)
 	}
-	defer conn.Close()
-	go listen(conn)
-	send(conn)
-}
 
-func listenForConnections() {
 	for {
-		conn, err := net.ListenUDP("udp", &lAddr) // code does not block here
-		if err != nil {
-			fmt.Printf("Could not listen on port 9090: %s\n", err)
-		}
-		var buf [1024]byte
-		_, rAddr, err := conn.ReadFromUDP(buf[:])
-		if err != nil {
-			fmt.Printf("Could not Read from UDP: %s\n", err)
-		}
-		fmt.Printf("\nrec: %s\tfrom: %s\n", buf, rAddr)
-		err=conn.Close()
-		if err!=nil {
-			fmt.Printf("Could not Close first contact connection: %s\n", err)
-		}
+		handleClient(conn)
 	}
 }
 
-func listen(conn *net.UDPConn) {
-	for {
-		var buf [1024]byte
-		_, remoteAddr, err := conn.ReadFromUDP(buf[:])
-		if err != nil {
-			fmt.Printf("Could not Read from UDP: %s\n", err)
-		}
-		fmt.Printf("\nrec: %s\tfrom: %s\n", buf, remoteAddr)
+func handleClient(conn *net.UDPConn) {
+
+	var buf [1024]byte
+
+	_, addr, err := conn.ReadFromUDP(buf[0:])
+	if err != nil {
+		fmt.Printf("Could not read UDP datagrams: %s", err)
+		return
 	}
+	endpoint := fmt.Sprintf("%s", addr)
+	response, err := handleRequest(buf, endpoint)
+	if err != nil {
+		fmt.Printf("Could not handle request: %s", err)
+	}
+
+	conn.WriteToUDP([]byte(response), addr)
 }
 
-func send(conn *net.UDPConn) {
-	for {
-		fmt.Printf("send: ")
-		reader := bufio.NewReader(os.Stdin)
-		line, _, err := reader.ReadLine()
+func handleRequest(buf [1024]byte, Endpoint string) (string, error) {
+	reqType := string(buf[1])
+	switch reqType {
+	case "r":
+		register(string(buf[2:]), Endpoint)
+		return "successfuly registered.", nil
+	case "u":
+		err := updateRegistration(string(buf[2:]), Endpoint)
 		if err != nil {
-			fmt.Printf("Could not read line: %s\n", err)
+			return "updating ID failed", err
 		}
-		text := string(line)
-		jtext, err := json.Marshal(text)
+		return "successfuly updated.", nil
+	case "c":
+		peerEndpoint, err := getConnection(string(buf[2:]))
 		if err != nil {
-			fmt.Printf("Could not parse text to json: %s\n", err)
+			return "finding peer failed", err
 		}
-		conn.Write(jtext)
+		return peerEndpoint, nil
+	default:
+		return "invalid character", fmt.Errorf("invalid code: %s", reqType)
 	}
-}
-
-func parseRequest(buf [1024]byte) (string, string, error) {
-
-
-	return "", "", errors.New("Could not parse received input")
 }
 
 func register(ID, Endpoint string) {
-		clients=append(clients, client{ID, Endpoint})
+	clients = append(clients, client{ID, Endpoint})
 }
 
 func updateRegistration(ID, Endpoint string) error {
-	for _, client:=range clients {
-		if ID==client.ID {
-			client.Endpoint=Endpoint
+	for _, client := range clients {
+		if ID == client.ID {
+			client.Endpoint = Endpoint
 			return nil
 		}
 	}
@@ -104,14 +90,10 @@ func updateRegistration(ID, Endpoint string) error {
 }
 
 func getConnection(ID string) (string, error) {
-	for _, client:=range clients {
-		if ID==client.ID {
+	for _, client := range clients {
+		if ID == client.ID {
 			return client.Endpoint, nil
 		}
 	}
 	return "", errors.New("Could not find the given ID in the database")
-}
-
-func main() {
-	serveCommunicate()
 }
