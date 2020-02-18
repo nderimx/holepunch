@@ -1,0 +1,5 @@
+GIVEN a rendesvouz server's endpoint
+AND the lan endpoint of this requesting host
+AND a standard registration request schema
+WHEN using 
+THEN a registration request should be generated with the internal lan endpoint
