@@ -2,11 +2,19 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"strconv"
+	"strings"
+)
+
+var (
+	serverAddress = "34.201.140.148"
+	serverPort    = "9090"
+	lPort         = "7171"
 )
 
 func listen(conn *net.UDPConn) {
@@ -36,7 +44,36 @@ func send(conn *net.UDPConn) {
 	}
 }
 
-func communicate(remoteAddress, rPort, lPort string) {
+func communicate(remoteAddress, rPort string) {
+	intrPort, err := strconv.Atoi(rPort)
+	if err != nil {
+		fmt.Printf("Could not convert input port to integer: %s\n", err)
+	}
+	intlPort, err := strconv.Atoi(lPort)
+	if err != nil {
+		fmt.Printf("Could not convert input port to integer: %s\n", err)
+	}
+
+	rAddr := net.UDPAddr{
+		Port: intrPort,
+		IP:   net.ParseIP(remoteAddress),
+	}
+	lAddr := net.UDPAddr{
+		Port: intlPort,
+		IP:   nil,
+	}
+	conn, err := net.DialUDP("udp", &lAddr, &rAddr)
+	if err != nil {
+		fmt.Printf("Could not Connect to remote Address: %s\n", err)
+	}
+	defer conn.Close()
+	go send(conn)
+	listen(conn)
+}
+
+func register(ID string) {
+	remoteAddress := serverAddress
+	rPort := serverPort
 	intrPort, err := strconv.Atoi(rPort)
 	if err != nil {
 		fmt.Printf("Could not convert imput port to integer: %s\n", err)
@@ -59,26 +96,127 @@ func communicate(remoteAddress, rPort, lPort string) {
 		fmt.Printf("Could not Connect to remote Address: %s\n", err)
 	}
 	defer conn.Close()
-	go send(conn)
-	listen(conn)
+
+	fmt.Print("Requesting Registration")
+	text := "r" + ID
+	jtext, err := json.Marshal(text)
+	if err != nil {
+		fmt.Printf("Could not parse text to json: %s\n", err)
+	}
+	conn.Write(jtext)
+
+	var buf [1024]byte
+	_, _, err = conn.ReadFromUDP(buf[:])
+	if err != nil {
+		fmt.Printf("Could not Read from UDP: %s\n", err)
+	}
+	fmt.Printf("\nrec: %s\nsend: ", buf)
 }
 
-func register() {
+func updateRegistration(ID string) {
+	remoteAddress := serverAddress
+	rPort := serverPort
+	intrPort, err := strconv.Atoi(rPort)
+	if err != nil {
+		fmt.Printf("Could not convert imput port to integer: %s\n", err)
+	}
+	intlPort, err := strconv.Atoi(lPort)
+	if err != nil {
+		fmt.Printf("Could not convert imput port to integer: %s\n", err)
+	}
 
+	rAddr := net.UDPAddr{
+		Port: intrPort,
+		IP:   net.ParseIP(remoteAddress),
+	}
+	lAddr := net.UDPAddr{
+		Port: intlPort,
+		IP:   nil,
+	}
+	conn, err := net.DialUDP("udp", &lAddr, &rAddr)
+	if err != nil {
+		fmt.Printf("Could not Connect to remote Address: %s\n", err)
+	}
+	defer conn.Close()
+
+	fmt.Print("Requesting Registration Update")
+	text := "u" + ID
+	jtext, err := json.Marshal(text)
+	if err != nil {
+		fmt.Printf("Could not parse text to json: %s\n", err)
+	}
+	conn.Write(jtext)
+
+	var buf [1024]byte
+	_, _, err = conn.ReadFromUDP(buf[:])
+	if err != nil {
+		fmt.Printf("Could not Read from UDP: %s\n", err)
+	}
+	fmt.Printf("\nrec: %s\nsend: ", buf)
 }
 
-func updateRegistration() {
+func getConnection(ID string) (string, string, error) {
+	remoteAddress := serverAddress
+	rPort := serverPort
+	intrPort, err := strconv.Atoi(rPort)
+	if err != nil {
+		fmt.Printf("Could not convert input port to integer: %s\n", err)
+	}
+	intlPort, err := strconv.Atoi(lPort)
+	if err != nil {
+		fmt.Printf("Could not convert input port to integer: %s\n", err)
+	}
 
-}
+	rAddr := net.UDPAddr{
+		Port: intrPort,
+		IP:   net.ParseIP(remoteAddress),
+	}
+	lAddr := net.UDPAddr{
+		Port: intlPort,
+		IP:   nil,
+	}
+	conn, err := net.DialUDP("udp", &lAddr, &rAddr)
+	if err != nil {
+		fmt.Printf("Could not Connect to remote Address: %s\n", err)
+	}
+	defer conn.Close()
 
-func getConnection() {
+	fmt.Print("Requesting Peer ID")
+	text := "c" + ID
+	jtext, err := json.Marshal(text)
+	if err != nil {
+		fmt.Printf("Could not parse text to json: %s\n", err)
+	}
+	conn.Write(jtext)
 
-}
+	var buf [1024]byte
+	_, _, err = conn.ReadFromUDP(buf[:])
+	if err != nil {
+		fmt.Printf("Could not Read from UDP: %s\n", err)
+	}
+	fmt.Printf("\nrec: %s\nsend: ", buf)
 
-func connectp2p() {
-
+	response := string(bytes.Trim(buf[:], "\x00"))
+	if strings.Contains(response, "fail") {
+		return "", "", fmt.Errorf("Could not get Connection to peer: %s", response)
+	}
+	peerEndpoint := response
+	tempSlice := strings.Split(peerEndpoint, ":")
+	fmt.Println(response)
+	return tempSlice[0], tempSlice[1], nil
 }
 
 func main() {
-	communicate(os.Args[1], os.Args[2], os.Args[3])
+	register(os.Args[1])
+	var peerAddress string
+	var peerPort string
+	var err error
+	for {
+		peerAddress, peerPort, err = getConnection(os.Args[2])
+		if err == nil {
+			break
+		}
+	}
+	fmt.Println(peerAddress + " " + peerPort)
+	communicate(peerAddress, peerPort)
 }
